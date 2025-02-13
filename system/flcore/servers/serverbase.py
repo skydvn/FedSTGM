@@ -20,6 +20,7 @@ import sys
 # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # sys.path.append(os.path.join(project_root, "dataset"))
 import torch
+import wandb
 import glog as logger
 import numpy as np
 import h5py
@@ -266,7 +267,7 @@ class Server(object):
         return ids, num_samples, losses
 
     # evaluate selected clients
-    def evaluate(self, acc=None, loss=None):
+    def evaluate(self, glob_iter, acc=None, loss=None):
         stats = self.test_metrics()
         stats_train = self.train_metrics()
 
@@ -285,6 +286,15 @@ class Server(object):
             self.rs_train_loss.append(train_loss)
         else:
             loss.append(train_loss)
+
+        if self.args.wandb:
+            wandb.log({
+                "Global/Averaged Train Loss": train_loss,
+                "Global/Averaged Test Accurancy": test_acc,
+                "Global/Averaged Test AUC": test_auc,
+                "Global/Std Test Accurancy": accs,
+                "Global/Std Test AUC": aucs,
+            }, step=glob_iter)
 
         print("Averaged Train Loss: {:.4f}".format(train_loss))
         print("Averaged Test Accurancy: {:.4f}".format(test_acc))

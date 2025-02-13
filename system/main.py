@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 import torchvision
 import logging
+import wandb
 
 from flcore.servers.serveravg import FedAvg
 from flcore.servers.serverpFedMe import pFedMe
@@ -87,6 +88,15 @@ torch.manual_seed(0)
 
 
 def run(args):
+
+    if args.wandb:
+        wandb.login(key="b1d6eed8871c7668a889ae74a621b5dbd2f3b070")
+        wandb.init(
+            project="FCL",
+            entity="letuanhf-hanoi-university-of-science-and-technology",
+            config=args, 
+            name=f"{args.dataset}_{args.model}_localep{args.local_epochs}",
+        )
 
     time_list = []
     reporter = MemReporter()
@@ -398,6 +408,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     # general
+    parser.add_argument("--wandb", type=bool, default=False)
     parser.add_argument("--datadir", type=str, default="dataset")
     parser.add_argument("--data_split_file", type=str, default="data_split/CIFAR100_split.pkl")
     parser.add_argument('-go', "--goal", type=str, default="test", 
@@ -414,7 +425,7 @@ if __name__ == "__main__":
                         help="Local learning rate")
     parser.add_argument('-ld', "--learning_rate_decay", type=bool, default=False)
     parser.add_argument('-ldg', "--learning_rate_decay_gamma", type=float, default=0.99)
-    parser.add_argument('-gr', "--global_rounds", type=int, default=2)
+    parser.add_argument('-gr', "--global_rounds", type=int, default=2000)
     parser.add_argument('-tc', "--top_cnt", type=int, default=100, 
                         help="For auto_break")
     parser.add_argument('-ls', "--local_epochs", type=int, default=1, 

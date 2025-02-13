@@ -45,6 +45,7 @@ class FedAvg(Server):
 
         for task in range(N_TASKS):
 
+            print(f"\n================ Current Task: {task} =================")
             if task == 0:
                  # update labels info. for the first task
                 available_labels = set()
@@ -84,7 +85,9 @@ class FedAvg(Server):
                     u.available_labels_current = list(available_labels_current)
                     u.available_labels_past = list(available_labels_past)
 
-            for i in range(self.global_rounds+1):
+            for i in range(self.global_rounds):
+
+                glob_iter = i + self.global_rounds * task
                 s_t = time.time()
                 self.selected_clients = self.select_clients()
                 self.send_models()
@@ -92,7 +95,7 @@ class FedAvg(Server):
                 if i%self.eval_gap == 0:
                     print(f"\n-------------Round number: {i}-------------")
                     print("\nEvaluate global model")
-                    self.evaluate()
+                    self.evaluate(glob_iter=glob_iter)
 
                 for client in self.selected_clients:
                     client.train()
@@ -128,4 +131,4 @@ class FedAvg(Server):
                 self.set_new_clients(clientAVG)
                 print(f"\n-------------Fine tuning round-------------")
                 print("\nEvaluate new clients")
-                self.evaluate()
+                self.evaluate(glob_iter=glob_iter)
