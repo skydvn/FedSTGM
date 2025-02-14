@@ -20,7 +20,7 @@ import torch
 from flcore.clients.clientavg import clientAVG
 from flcore.servers.serverbase import Server
 from threading import Thread
-from utils.model_utils import read_user_data_FCL
+from utils.model_utils import read_client_data_FCL, read_client_data_FCL_imagenet1k
 
 
 class FedAvg(Server):
@@ -40,8 +40,11 @@ class FedAvg(Server):
 
     def train(self):
 
-        N_TASKS = len(self.data['train_data'][self.data['client_names'][0]]['x'])
-        print(str(N_TASKS) + " task available")
+        if self.args.dataset == 'IMAGENET1k':
+            N_TASKS = 500
+        else:
+            N_TASKS = len(self.data['train_data'][self.data['client_names'][0]]['x'])
+        print(str(N_TASKS) + " tasks are available")
 
         for task in range(N_TASKS):
 
@@ -65,8 +68,11 @@ class FedAvg(Server):
                 
                 torch.cuda.empty_cache()
                 for i in range(len(self.clients)):
-
-                    id, train_data, test_data, label_info = read_user_data_FCL(i, self.data, dataset=self.args.dataset, count_labels=True, task = task)
+                    
+                    if self.args.dataset == 'IMAGENET1k':
+                        id, train_data, test_data, label_info = read_client_data_FCL_imagenet1k(i, task=task, classes_per_task=2, count_labels=True)
+                    else:
+                        id, train_data, test_data, label_info = read_client_data_FCL(i, self.data, dataset=self.args.dataset, count_labels=True, task=task)
 
                     # update dataset
                     # assert (self.users[i].id == id)

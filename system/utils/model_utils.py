@@ -8,16 +8,36 @@ import torchvision.transforms as transforms
 from tqdm import trange
 import random
 import numpy as np
+import pickle
 
 from torch.utils.data import DataLoader
-# from FLAlgorithms.PreciseFCLNet.model import PreciseModel
-from utils.dataset import Transform_dataset
+from utils.dataset import Transform_dataset, load_imagenet
 METRICS = ['glob_acc', 'per_acc', 'glob_loss', 'per_loss', 'user_train_time', 'server_agg_time']
 
+def read_client_data_FCL_imagenet1k(index, task = 0, classes_per_task = 2, count_labels=False):
+    id = index
+    with open('dataset/class_order', 'rb+') as f:
+        class_order = pickle.load(f)
+        class_order = class_order[id]
+    x_train, y_train, x_test, y_test = load_imagenet(class_order[task*classes_per_task:(task+1)*classes_per_task])
+    x_train, x_test = x_train.type(torch.FloatTensor), x_test.type(torch.FloatTensor)
+    y_train, y_test = torch.Tensor(y_train.type(torch.long)), torch.Tensor(y_test.type(torch.long))
+    train_data = Transform_dataset(x_train, y_train)
+    test_data = Transform_dataset(x_test, y_test)
 
+    if count_labels:
+        label_info = {}
+        unique_y, counts=torch.unique(y_train, return_counts=True)
+        unique_y=unique_y.detach().numpy()
+        counts=counts.detach().numpy()
+        label_info['labels']=unique_y
+        label_info['counts']=counts
 
+        return id, train_data, test_data, label_info
+    
+    return id, train_data, test_data
 
-def read_user_data_FCL(index, data, dataset='', count_labels=False, task = 0):
+def read_client_data_FCL(index, data, dataset='', count_labels=False, task = 0):
     '''
     INPUT:
         data: data[train/test][user_id][task_id]

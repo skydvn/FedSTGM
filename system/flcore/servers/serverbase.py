@@ -1,20 +1,3 @@
-# PFLlib: Personalized Federated Learning Algorithm Library
-# Copyright (C) 2021  Jianqing Zhang
-
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
 import os
 import sys
 # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -30,7 +13,7 @@ import random
 from utils.data_utils import read_client_data
 from utils.dlg import DLG
 from utils.dataset import get_dataset
-from utils.model_utils import read_user_data_FCL
+from utils.model_utils import read_client_data_FCL, read_client_data_FCL_imagenet1k
 
 class Server(object):
     def __init__(self, args, times):
@@ -38,7 +21,10 @@ class Server(object):
         self.args = args
         self.device = args.device
         self.dataset = args.dataset
-        self.data = get_dataset(args, args.dataset, args.datadir, args.data_split_file)
+        if self.args.dataset == 'IMAGENET1k':
+            self.data = None
+        else:
+            self.data = get_dataset(args, args.dataset, args.datadir, args.data_split_file)
         self.num_classes = args.num_classes
         self.global_rounds = args.global_rounds
         self.local_epochs = args.local_epochs
@@ -90,9 +76,13 @@ class Server(object):
         self.total_test_samples = 0
 
     def set_clients(self, clientObj):
-        total_clients = len(self.data['client_names'])
+        total_clients = 10
         for i, train_slow, send_slow in zip(range(self.num_clients), self.train_slow_clients, self.send_slow_clients):
-            id, train_data, test_data, label_info = read_user_data_FCL(i, self.data, dataset=self.args.dataset, count_labels=True, task = 0)
+            
+            if self.args.dataset == 'IMAGENET1k':
+                id, train_data, test_data, label_info = read_client_data_FCL_imagenet1k(i, task=0, classes_per_task=2, count_labels=True)
+            else:
+                id, train_data, test_data, label_info = read_client_data_FCL(i, self.data, dataset=self.args.dataset, count_labels=True, task=0)
             
             # count total samples (accumulative)
             self.total_train_samples +=len(train_data)
