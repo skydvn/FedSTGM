@@ -1,7 +1,5 @@
 import os
 import sys
-# project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-# sys.path.append(os.path.join(project_root, "dataset"))
 import torch
 import wandb
 import glog as logger
