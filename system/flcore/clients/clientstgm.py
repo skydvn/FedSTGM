@@ -8,6 +8,11 @@ from flcore.clients.clientbase import Client
 class clientSTGM(Client):
     def __init__(self, args, id, train_data, test_data, train_samples, test_samples, **kwargs):
         super().__init__(args, id, train_data, test_data, train_samples, test_samples, **kwargs)
+        """ 
+        - Replay memory:
+            + Set maximum memory.
+            + Set in/out function for memory.
+        """
 
     def train(self):
         trainloader = self.load_train_data()
@@ -34,6 +39,13 @@ class clientSTGM(Client):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
+            """
+            - STGM on client-side
+                + Load prototype
+                + Inference -> Loss -> Gradients 
+                + GM on client-side
+            """
 
         # self.model.cpu()
 

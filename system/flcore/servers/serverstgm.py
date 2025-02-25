@@ -61,7 +61,7 @@ class FedSTGM(Server):
                                                                                      count_labels=True, task=task)
 
                     # update dataset
-                    # vassert (self.users[i].id == id)
+                    # assert (self.users[i].id == id)
                     self.clients[i].next_task(train_data, test_data, label_info)  # assign dataloader for new data
 
                 # update labels info.
