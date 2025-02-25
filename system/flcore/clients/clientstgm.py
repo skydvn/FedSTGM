@@ -5,7 +5,7 @@ import time
 from flcore.clients.clientbase import Client
 
 
-class clientAVG(Client):
+class clientSTGM(Client):
     def __init__(self, args, id, train_data, test_data, train_samples, test_samples, **kwargs):
         super().__init__(args, id, train_data, test_data, train_samples, test_samples, **kwargs)
 
