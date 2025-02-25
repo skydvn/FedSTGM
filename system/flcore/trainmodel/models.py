@@ -531,12 +531,3 @@ class TextCNN(nn.Module):
 
 # ====================================================================================================================
 
-
-# class linear(Function):
-#   @staticmethod
-#   def forward(ctx, input):
-#     return input
-  
-#   @staticmethod
-#   def backward(ctx, grad_output):
-#     return grad_output
