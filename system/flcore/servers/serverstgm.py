@@ -19,6 +19,15 @@ class FedSTGM(Server):
 
         # self.load_model()
         self.Budget = []
+        self.update_grads = None
+        self.grad_stgm_c = args.c_parameter
+        self.grad_stgm_rounds = args.grad_stgm_rounds
+        self.grad_stgm_learning_rate = args.grad_stgm_learning_rate
+        self.momentum = args.momentum
+        self.step_size = args.step_size
+        self.gamma = args.gamma
+        self.device = args.device
+        # model_origin = copy.deepcopy(args.model)
 
     def train(self):
 
