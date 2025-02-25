@@ -98,10 +98,33 @@ class FedSTGM(Server):
                 # [t.join() for t in threads]
 
                 self.receive_models()
-                if self.dlg_eval and i % self.dlg_gap == 0:
-                    self.call_dlg(i)
-                self.aggregate_parameters()
-                # self.aggregate_stgm()
+                self.receive_grads()
+
+                """
+                Add aggregate STGM
+                """
+                grad_ez = sum(p.numel() for p in self.global_model.parameters())
+                grads = torch.Tensor(grad_ez, self.num_clients)
+
+                for index, model in enumerate(self.grads):
+                    grad2vec2(model, grads, index)
+
+                g = self.aggregate_stgm(grads, self.num_clients)
+
+                # model_origin = copy.deepcopy(self.global_model)
+                self.overwrite_grad2(self.global_model, g)
+                for param in self.global_model.parameters():
+                    param.data += param.grad
+
+                # angle = [self.cos_sim(model_origin, self.global_model, models) for models in self.grads]
+                # self.angle_value = statistics.mean(angle)
+                #
+                # angle_value = []
+                # for i in self.grads:
+                #     for j in self.grads:
+                #         angle_value = [self.cosine_similarity(i, j)]
+                #
+                # self.grads_angle_value = statistics.mean(angle_value)
 
                 self.Budget.append(time.time() - s_t)
                 print('-' * 25, 'time cost', '-' * 25, self.Budget[-1])
@@ -126,5 +149,70 @@ class FedSTGM(Server):
                 print("\nEvaluate new clients")
                 self.evaluate(glob_iter=glob_iter)
 
-    def aggregate_stgm(self):
-        pass
+    def aggregate_stgm(self, grad_vec, num_tasks):
+
+        grads = grad_vec.to(self.device)
+
+        GG = grads.t().mm(grads)
+        # to(device)
+        scale = (torch.diag(GG) + 1e-4).sqrt().mean()
+        GG = GG / scale.pow(2)
+        Gg = GG.mean(1, keepdims=True)
+        gg = Gg.mean(0, keepdims=True)
+
+        w = torch.zeros(num_tasks, 1, requires_grad=True, device=self.device)
+        #         w = torch.zeros(num_tasks, 1, requires_grad=True).to(self.device)
+
+        if num_tasks == 50:
+            w_opt = torch.optim.SGD([w], lr=self.grad_omg_learning_rate * 2, momentum=self.momentum)
+        else:
+            w_opt = torch.optim.SGD([w], lr=self.grad_omg_learning_rate, momentum=self.momentum)
+
+        scheduler = StepLR(w_opt, step_size=self.step_size, gamma=self.gamma)
+
+        c = (gg + 1e-4).sqrt() * self.grad_omg_c
+
+        w_best = None
+        obj_best = np.inf
+        for i in range(self.grad_omg_rounds + 1):
+            w_opt.zero_grad()
+            ww = torch.softmax(w, dim=0)
+            obj = ww.t().mm(Gg) + c * (ww.t().mm(GG).mm(ww) + 1e-4).sqrt()
+            if obj.item() < obj_best:
+                obj_best = obj.item()
+                w_best = w.clone()
+            if i < self.grad_omg_rounds:
+                obj.backward()
+                w_opt.step()
+                scheduler.step()
+
+                # Check this scheduler. step()
+
+        ww = torch.softmax(w_best, dim=0)
+        gw_norm = (ww.t().mm(GG).mm(ww) + 1e-4).sqrt()
+
+        lmbda = c.view(-1) / (gw_norm + 1e-4)
+        g = ((1 / num_tasks + ww * lmbda).view(
+            -1, 1).to(grads.device) * grads.t()).sum(0) / (1 + self.grad_omg_c ** 2)
+        return g
+
+    def overwrite_grad2(self, m, newgrad):
+        newgrad = newgrad * self.num_clients
+        for param in m.parameters():
+            # Get the number of elements in the current parameter
+            num_elements = param.numel()
+
+            # Extract a slice of new_params with the same number of elements
+            param_slice = newgrad[:num_elements]
+
+            # Reshape the slice to match the shape of the current parameter
+            param.grad = param_slice.view(param.data.size())
+
+            # Move to the next slice in new_params
+            newgrad = newgrad[num_elements:]
+
+def grad2vec2(m, grads, task):
+    grads[:, task].fill_(0.0)
+    all_params = torch.cat([param.detach().view(-1) for param in m.parameters()])
+    # print(all_params.size())
+    grads[:, task].copy_(all_params)
