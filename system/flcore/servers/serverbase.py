@@ -165,6 +165,27 @@ class Server(object):
         for i, w in enumerate(self.uploaded_weights):
             self.uploaded_weights[i] = w / tot_samples
 
+    def receive_grads(self):
+
+        self.grads = copy.deepcopy(self.uploaded_models)
+        # This for copy the list to store all the gradient update value
+
+        for model in self.grads:
+            for param in model.parameters():
+                param.data.zero_()
+
+        for grad_model, local_model in zip(self.grads, self.uploaded_models):
+            for grad_param, local_param, global_param in zip(grad_model.parameters(), local_model.parameters(),
+                                                             self.global_model.parameters()):
+                grad_param.data = local_param.data - global_param.data
+
+        for w, client_model in zip(self.uploaded_weights, self.grads):
+            self.mul_params(w, client_model)
+
+    def mul_params(self, w, client_model):
+        for param in client_model.parameters():
+            param.data = param.data.clone() * w
+
     def aggregate_parameters(self):
         assert (len(self.uploaded_models) > 0)
 
