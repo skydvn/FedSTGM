@@ -101,6 +101,7 @@ class FedSTGM(Server):
                 if self.dlg_eval and i % self.dlg_gap == 0:
                     self.call_dlg(i)
                 self.aggregate_parameters()
+                # self.aggregate_stgm()
 
                 self.Budget.append(time.time() - s_t)
                 print('-' * 25, 'time cost', '-' * 25, self.Budget[-1])
@@ -124,3 +125,6 @@ class FedSTGM(Server):
                 print(f"\n-------------Fine tuning round-------------")
                 print("\nEvaluate new clients")
                 self.evaluate(glob_iter=glob_iter)
+
+    def aggregate_stgm(self):
+        pass
