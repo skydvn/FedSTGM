@@ -178,7 +178,7 @@ if __name__ == "__main__":
     # FedSTGM
     parser.add_argument('-car', "--grad_stgm_rounds", type=int, default=100)
     parser.add_argument('-calr', "--grad_stgm_learning_rate", type=float, default=25)
-    parser.add_argument('-mmt', "--momentum", type=float, default=0.5)
+    parser.add_argument('-mmt', "--stgm_momentum", type=float, default=0.5)
     parser.add_argument('-ss', "--step_size", type=int, default=30)
     parser.add_argument('-gam', "--gamma", type=float, default=0.5)
     parser.add_argument('-c', "--c_parameter", type=float, default=0.5)
