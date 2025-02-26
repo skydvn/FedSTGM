@@ -176,6 +176,7 @@ if __name__ == "__main__":
     parser.add_argument('-klw', "--kl_weight", type=float, default=0.0)
 
     # FedSTGM
+    parser.add_argument('-mem', "--stgm_mem", type=int, default=1e7)
     parser.add_argument('-car', "--grad_stgm_rounds", type=int, default=100)
     parser.add_argument('-calr', "--grad_stgm_learning_rate", type=float, default=25)
     parser.add_argument('-mmt', "--stgm_momentum", type=float, default=0.5)

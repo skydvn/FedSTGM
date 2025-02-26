@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import time
 from flcore.clients.clientbase import Client
+from collections import OrderedDict
 
 
 class clientSTGM(Client):
@@ -13,6 +14,11 @@ class clientSTGM(Client):
             + Set maximum memory.
             + Set in/out function for memory.
         """
+        self.memory_num = args.memory_num
+        self.G = OrderedDict()
+        self.buffer = OrderedDict()
+        self.new_buffer = OrderedDict()
+
 
     def train(self):
         trainloader = self.load_train_data()
