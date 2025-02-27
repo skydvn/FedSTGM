@@ -217,7 +217,7 @@ class Buffer(nn.Module):
         indices = torch.randperm(self.current_index).to(self.args.device)
         return indices[:amt], indices[amt:]
 
-    def onlysample(self, amt, task=None, ret_ind=False):
+    def onlysample(self, amt, task=None, ret_ind=False):clear
 
         if self.save_logits:
             if task is not None:
