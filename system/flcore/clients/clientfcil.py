@@ -55,11 +55,11 @@ class clientFCIL(Client):
             self.old_model = model_to_device(self.old_model, False, self.device)
             self.old_model.eval()
 
-        for epoch in range(self.epochs):
+        for epoch in range(max_local_epochs):
             loss_cur_sum, loss_mmd_sum = [], []
             if (epoch + ep_g * 20) % 200 == 100:
                 if self.numclass == self.task_size:
-                    opt = optim.SGD(self.model.parameters(), lr=self.learning_rate / 5, weight_decay=0.00001)
+                    opt = self.optimizer
                 else:
                     for p in opt.param_groups:
                         p['lr'] = self.learning_rate / 5
@@ -77,6 +77,8 @@ class clientFCIL(Client):
                         p['lr'] = self.learning_rate / 125
             for step, (indexs, images, target) in enumerate(self.train_loader):
                 images, target = images.cuda(self.device), target.cuda(self.device)
+                if self.train_slow:
+                    time.sleep(0.1 * np.abs(np.random.rand()))
                 loss_value = self._compute_loss(indexs, images, target)
                 opt.zero_grad()
                 loss_value.backward()

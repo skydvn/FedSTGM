@@ -125,6 +125,7 @@ class FedFCIL(Server):
                     model_g = model_to_device(model_g, False, args.device)
 
                 print('federated global round: {}, task_id: {}'.format(ep_g, task_id))
+                w_local = []
 
                 self.selected_clients = self.select_clients()
                 self.send_models()
@@ -135,19 +136,16 @@ class FedFCIL(Server):
                     self.evaluate(glob_iter=glob_pool_graditer)
 
                 for client in self.selected_clients:
-                    clients.model = copy.deepcopy(model_g)
-
                     if index in old_client:
-                        clients.beforeTrain(task_id, 0)
+                        client.beforeTrain(task_id, 0)
                     else:
-                        clients.beforeTrain(task_id, 1)
+                        client.beforeTrain(task_id, 1)
 
-                    clients.update_new_set()
-                    print(clients[index].signal)
-                    client.train()
-                    clients[index].train(ep_g, model_old)
-                    local_model = clients.model.state_dict()
-                    proto_grad = clients.proto_grad_sharing()
+                    client.update_new_set()
+                    print(client.signal)
+                    client.train(ep_g, model_old)
+                    local_model = client.model.state_dict()
+                    proto_grad = client.proto_grad_sharing()
 
                     print('*' * 60)
                     """

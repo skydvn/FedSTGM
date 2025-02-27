@@ -14,6 +14,7 @@ from flcore.servers.serveravg import FedAvg
 from flcore.servers.serverala import FedALA
 from flcore.servers.serverdbe import FedDBE
 from flcore.servers.serverstgm import FedSTGM
+from flcore.servers.serverfcil import FedFCIL
 
 from flcore.trainmodel.models import *
 
@@ -85,6 +86,11 @@ def run(args):
             args.model.fc = nn.Identity()
             args.model = BaseHeadSplit(args.model, args.head)
             server = FedDBE(args, i)
+        elif args.algorithm == "FedFCIL":
+            args.head = copy.deepcopy(args.model.fc)
+            args.model.fc = nn.Identity()
+            args.model = BaseHeadSplit(args.model, args.head)
+            server = FedFCIL(args, i)
         elif args.algorithm == "FedSTGM":
             args.head = copy.deepcopy(args.model.fc)
             args.model.fc = nn.Identity()
