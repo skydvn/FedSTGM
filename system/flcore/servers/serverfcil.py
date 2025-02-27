@@ -81,6 +81,14 @@ class FedFCIL(Server):
 
                 glob_iter = i + self.global_rounds * task
                 s_t = time.time()
+
+                """
+                    L85-L103 FCIL/fl_main.py
+                    - model_g -> global_model
+                    - proxy_server -> ? 
+                    - 
+                """
+
                 self.selected_clients = self.select_clients()
                 self.send_models()
 
@@ -91,6 +99,12 @@ class FedFCIL(Server):
 
                 for client in self.selected_clients:
                     client.train()
+                    """
+                        L106-110 comes here
+                        - returns client.model + client.proto_grad
+                        - grad_i in proto_grad? what is the shape of proto_grad?
+                        - append to pool_grad
+                    """
 
                 # threads = [Thread(target=client.train)
                 #            for client in self.selected_clients]
@@ -101,6 +115,11 @@ class FedFCIL(Server):
                 if self.dlg_eval and i % self.dlg_gap == 0:
                     self.call_dlg(i)
                 self.aggregate_parameters()
+
+                """
+                    L121-L124 comes here
+                    - proxy_server.dataloader(pool_grad) do for what?
+                """
 
                 self.Budget.append(time.time() - s_t)
                 print('-' * 25, 'time cost', '-' * 25, self.Budget[-1])
