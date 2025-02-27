@@ -20,6 +20,13 @@ class FedFCIL(Server):
         # self.load_model()
         self.Budget = []
 
+        self.pool_grad = None
+        self.best_model_1 = None
+        self.best_model_2 = None
+        self.best_perf = 0
+        self.encode_model = encode_model                  # Check this
+        self.monitor_dataset = Proxy_Data(test_transform) # Check this
+
     def train(self):
 
         if self.args.dataset == 'IMAGENET1k':
@@ -95,7 +102,7 @@ class FedFCIL(Server):
                 if i % self.eval_gap == 0:
                     print(f"\n-------------Round number: {i}-------------")
                     print("\nEvaluate global model")
-                    self.evaluate(glob_iter=glob_iter)
+                    self.evaluate(glob_iter=glob_pool_graditer)
 
                 for client in self.selected_clients:
                     client.train()
@@ -143,3 +150,21 @@ class FedFCIL(Server):
                 print(f"\n-------------Fine tuning round-------------")
                 print("\nEvaluate new clients")
                 self.evaluate(glob_iter=glob_iter)
+
+    def model_back(self):
+        return [self.best_model_1, self.best_model_2]
+
+    def dataloader(self, pool_grad):
+        self.pool_grad = pool_grad
+        if len(pool_grad) != 0:
+            self.reconstruction()
+            self.monitor_dataset.getTestData(self.new_set, self.new_set_label)
+            self.monitor_loader = DataLoader(dataset=self.monitor_dataset, shuffle=True, batch_size=64, drop_last=True)
+            self.last_perf = 0
+            self.best_model_1 = self.best_model_2
+
+        cur_perf = self.monitor()
+        print(cur_perf)
+        if cur_perf >= self.best_perf:
+            self.best_perf = cur_perf
+            self.best_model_2 = copy.deepcopy(self.model)
