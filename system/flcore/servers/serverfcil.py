@@ -35,6 +35,17 @@ class FedFCIL(Server):
             N_TASKS = len(self.data['train_data'][self.data['client_names'][0]]['x'])
         print(str(N_TASKS) + " tasks are available")
 
+        """
+            Init for parameters for learning FCIL 
+        """
+        old_client_0 = []
+        old_client_1 = [i for i in range(args.num_clients)]
+        new_client = []
+        models = []
+
+        classes_learned = args.task_size # Verify later
+        old_task_id = -1
+
         for task in range(N_TASKS):
 
             print(f"\n================ Current Task: {task} =================")
@@ -95,6 +106,25 @@ class FedFCIL(Server):
                     - proxy_server -> ? 
                     - 
                 """
+                pool_grad = []
+                model_old = proxy_server.model_back()
+                task_id = task  # ep_g // args.tasks_global (exchange with this)
+                ep_g = (task*self.global_rounds + i)
+
+                if task_id != old_task_id and old_task_id != -1:
+                    overall_client = len(old_client_0) + len(old_client_1) + len(new_client)
+                    new_client = [i for i in range(overall_client, overall_client + args.task_size)]
+                    old_client_1 = random.sample([i for i in range(overall_client)], int(overall_client * 0.9))
+                    old_client_0 = [i for i in range(overall_client) if i not in old_client_1]
+                    num_clients = len(new_client) + len(old_client_1) + len(old_client_0)
+                    print(old_client_0)
+
+                if task_id != old_task_id and old_task_id != -1:
+                    classes_learned += args.task_size
+                    model_g.Incremental_learning(classes_learned)
+                    model_g = model_to_device(model_g, False, args.device)
+
+                print('federated global round: {}, task_id: {}'.format(ep_g, task_id))
 
                 self.selected_clients = self.select_clients()
                 self.send_models()
@@ -105,13 +135,33 @@ class FedFCIL(Server):
                     self.evaluate(glob_iter=glob_pool_graditer)
 
                 for client in self.selected_clients:
+                    clients.model = copy.deepcopy(model_g)
+
+                    if index in old_client:
+                        clients.beforeTrain(task_id, 0)
+                    else:
+                        clients.beforeTrain(task_id, 1)
+
+                    clients.update_new_set()
+                    print(clients[index].signal)
                     client.train()
+                    clients[index].train(ep_g, model_old)
+                    local_model = clients.model.state_dict()
+                    proto_grad = clients.proto_grad_sharing()
+
+                    print('*' * 60)
                     """
                         L106-110 comes here
                         - returns client.model + client.proto_grad
                         - grad_i in proto_grad? what is the shape of proto_grad?
                         - append to pool_grad
                     """
+                    # local_model, proto_grad = local_train(models, c, model_g, task_id, model_old, ep_g, old_client_0)
+                    local_model, proto_grad = client.train(task_id, model_old, ep_g, old_client_0)
+                    w_local.append(local_model)
+                    if proto_grad != None:
+                        for grad_i in proto_grad:
+                            pool_grad.append(grad_i)
 
                 # threads = [Thread(target=client.train)
                 #            for client in self.selected_clients]
@@ -127,6 +177,12 @@ class FedFCIL(Server):
                     L121-L124 comes here
                     - proxy_server.dataloader(pool_grad) do for what?
                 """
+                w_g_last = copy.deepcopy(model_g.state_dict())
+
+                model_g.load_state_dict(w_g_new)
+
+                proxy_server.model = copy.deepcopy(model_g)
+                proxy_server.dataloader(pool_grad)
 
                 self.Budget.append(time.time() - s_t)
                 print('-' * 25, 'time cost', '-' * 25, self.Budget[-1])
